@@ -1,8 +1,45 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
-data/
-artifacts/
-models/*.pt
-.env
+*.py[cod]
+*.so
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Daten: lokal herunterladen
+data/
+datasets/
+downloads/
+
+# Trainingsartefakte und Checkpoints
+artifacts/
+runs/
+logs/
+checkpoints/
+models/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# TensorBoard / MLflow
+tensorboard/
+mlruns/
+mlartifacts/
+
+# Lokale Python-/Conda-Konfiguration
+.venv/
+.env
+.env.*
+*.local
+
+# VS Code: lokale Benutzerkonfiguration nicht teilen
+.vscode/
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
