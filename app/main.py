@@ -9,6 +9,6 @@ app = FastAPI(
 @app.get("/health")
 def health() -> dict:
     return {
-        "status": "ok",
+        "status": "ok!",
         "model_loaded": False,
     }
