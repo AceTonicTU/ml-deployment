@@ -198,6 +198,7 @@ def main():
         "test_loss": test_loss,
         "test_accuracy": test_accuracy,
         "model_state_dict": model.state_dict(),
+        "input_size": (3, 32, 32),
     }
 
     checkpoint_path = MODELS_DIR / "cifar10_resnet18_v0.1.0.pth"
