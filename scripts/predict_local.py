@@ -1,49 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import time
 from pathlib import Path
 
 import torch
-import torchvision
 from PIL import Image, UnidentifiedImageError
-from torchvision.transforms import v2
+
+from app.inference import get_transform, load_model, predict
 
 DEFAULT_CHECKPOINT = Path("models/cifar10_resnet18_v0.1.0.pth")
-
-def build_model(num_classes: int, device: torch.device) -> torch.nn.Module:
-    """Builds a ResNet18 model with a custom output layer for the specified number of classes."""
-    model = torchvision.models.resnet18(weights=None)
-    model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-    return model
-
-def load_model(checkpoint_path: Path, device: torch.device,) -> tuple[torch.nn.Module, dict]:
-    checkpoint = torch.load(
-        checkpoint_path,
-        map_location=device,
-        weights_only=False,
-    )
-
-    model = build_model(
-        num_classes=checkpoint["num_classes"],
-        device=device,
-    )
-
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model = model.to(device)
-    model.eval()
-    return model, checkpoint
-
-def build_eval_transform(checkpoint: dict) -> v2.Compose:
-    return v2.Compose([
-        v2.ToImage(),
-        v2.Resize(checkpoint["input_size"][1:]),  # Resize to (H, W)
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(
-            mean=checkpoint["normalization_mean"],
-            std=checkpoint["normalization_std"],
-        ),
-    ])
 
 def load_image(image_path: Path) -> Image.Image:
     if not image_path.is_file():
@@ -53,29 +18,6 @@ def load_image(image_path: Path) -> Image.Image:
             return image.convert("RGB")
     except UnidentifiedImageError as e:
         raise ValueError(f"File is not a supported image: {image_path}") from e
-
-def predict(model: torch.nn.Module, image: Image.Image, transform: v2.Compose, class_names: list[str], device: torch.device, top_k: int) -> tuple[list[dict], float]:
-    """Predicts the class of the given image using the provided model and transformation."""
-    image_tensor = transform(image).unsqueeze(0).to(device) # unsqueeze because model expects a batch dimension
-
-    start_time = time.perf_counter()
-
-    with torch.inference_mode():
-        logits = model(image_tensor)
-        probabilities = torch.softmax(logits, dim=1)
-        confidences, indices = probabilities.topk(top_k, dim=1)
-
-    inference_time = (time.perf_counter() - start_time) * 1000
-
-    results = [
-        {
-            "label": class_names[int(idx.item())],
-            "confidence": float(conf.item()),
-        }
-        for conf, idx in zip(confidences[0], indices[0])
-    ]
-
-    return results, inference_time
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run local CIFAR-10 ResNet18 model inference on a single image.")
@@ -105,10 +47,10 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model, checkpoint = load_model(args.checkpoint_path, device)
-    transform = build_eval_transform(checkpoint)
+    transform = get_transform(checkpoint)
     image = load_image(args.image_path)
 
-    results, inference_time = predict(
+    results, inference_time_ms = predict(
         model=model,
         image=image,
         transform=transform,
@@ -122,7 +64,7 @@ def main() -> None:
     print(f"Image: {args.image_path}")
     print(f"Original Image Size: {image.size}")
     print(f"Device: {device}")
-    print(f"Inference Time in milliseconds (ms): {inference_time:.2f}")
+    print(f"Inference Time in milliseconds (ms): {inference_time_ms:.2f}")
     print(f"Top predictions:")
     for rank, result in enumerate(results, start=1):
         print(f"  {rank}. {result['label']} (confidence: {result['confidence']:.4f})")

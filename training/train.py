@@ -25,6 +25,9 @@ EPOCHS = 5
 LR = 1e-3
 NUM_WORKERS = 2
 
+CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
+CIFAR10_STD = (0.2470, 0.2435, 0.2616)
+
 DATA_DIR = Path("data")
 MODELS_DIR = Path("models")
 ARTIFACTS_DIR = Path("artifacts")
@@ -47,16 +50,16 @@ transform_gpu_train = v2.Compose([
     v2.RandomHorizontalFlip(),
     v2.RandomCrop(32, padding=4),
     v2.Normalize(
-        mean=(0.5, 0.5, 0.5),
-        std=(0.5, 0.5, 0.5),
+        mean=CIFAR10_MEAN,
+        std=CIFAR10_STD,
     ),
 ])
 
 transform_gpu_eval = v2.Compose([
     v2.ToDtype(torch.float32, scale=True),
     v2.Normalize(
-        mean=(0.5, 0.5, 0.5),
-        std=(0.5, 0.5, 0.5),
+        mean=CIFAR10_MEAN,
+        std=CIFAR10_STD,
     ),
 ])
 
@@ -192,8 +195,8 @@ def main():
         "model_version": "0.1.0",
         "num_classes": 10,
         "class_names": trainset.classes,
-        "normalization_mean": (0.5, 0.5, 0.5),
-        "normalization_std": (0.5, 0.5, 0.5),
+        "normalization_mean": CIFAR10_MEAN,
+        "normalization_std": CIFAR10_STD,
         "epoch": EPOCHS,
         "test_loss": test_loss,
         "test_accuracy": test_accuracy,
