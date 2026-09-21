@@ -5,11 +5,11 @@ from typing import Any, cast
 
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from app.inference import get_transform, load_model, predict
 
-MODEL_PATH = Path("artifacts/best_model.pt")
+MODEL_PATH = Path("models/cifar10_resnet18_v0.1.0.pth")
 
 model: torch.nn.Module | None = None
 class_names: list[str] = []
@@ -50,7 +50,10 @@ async def predict_image(
     top_k: int = 3,
 ) -> dict[str, Any]:
     if model is None or device is None or transform is None:
-        raise HTTPException(status_code=503, detail="Model is not initialized.")
+        raise HTTPException(
+            status_code=503,
+            detail="Model is not initialized.",
+        )
 
     if top_k < 1 or top_k > len(class_names):
         raise HTTPException(
@@ -61,16 +64,18 @@ async def predict_image(
     if file.content_type is None or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=415,
-            detail="Please upload a valid image file.",
+            detail="Please upload a JPG, PNG, or other image file.",
         )
 
     try:
         image_bytes = await file.read()
-        image = Image.open(BytesIO(image_bytes)).convert("RGB")
-    except Exception as exc:
+
+        with Image.open(BytesIO(image_bytes)) as uploaded_image:
+            image = uploaded_image.convert("RGB")
+    except UnidentifiedImageError as exc:
         raise HTTPException(
             status_code=400,
-            detail="The uploaded file could not be decoded as an image.",
+            detail="The uploaded file is not a valid supported image.",
         ) from exc
 
     predictions, inference_time_ms = predict(
@@ -85,6 +90,6 @@ async def predict_image(
     return {
         "filename": file.filename,
         "device": str(device),
-        "inference_time_ms": inference_time_ms,
+        "inference_time_ms": round(inference_time_ms, 2),
         "predictions": predictions,
     }
