@@ -1,0 +1,22 @@
+.git
+.vscode
+__pycache__
+*.py[cod]
+.pytest_cache
+.venv
+venv
+env
+data
+artifacts
+notebooks
+tests
+
+# Lokale Beispielbilder gehören nicht ins Image.
+*.jpg
+*.jpeg
+*.png
+
+# Nur den produktiv verwendeten Checkpoint einbeziehen.
+models/*.pth
+models/*.pt
+!models/cifar10_resnet18_v0.1.0.pth
