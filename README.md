@@ -1,5 +1,7 @@
 # ML Vision Deployment
+A small project to learn the usage of Docker in machine learning deployment.
 
+# App
 A FastAPI service that serves a fine-tuned ResNet-18 CIFAR-10 classifier.
 The service accepts an uploaded image and returns top-k predicted classes,
 confidence scores, and inference latency.
