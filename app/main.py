@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 from app.inference import get_transform, load_model, predict
@@ -37,17 +37,18 @@ app = FastAPI(
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> dict[str, str | bool]:
     return {
         "status": "ok",
         "device": str(device),
+        "model_loaded": model is not None,
     }
 
 
 @app.post("/predict")
 async def predict_image(
     file: UploadFile = File(...),
-    top_k: int = 3,
+    top_k: int = Form(3),
 ) -> dict[str, Any]:
     if model is None or device is None or transform is None:
         raise HTTPException(
